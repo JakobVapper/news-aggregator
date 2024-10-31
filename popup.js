@@ -1,15 +1,17 @@
-const NEWS_API_URL = "http://localhost:3000/news"; // Use your proxy server
+const NEWS_API_URL = "http://localhost:3000/news";
 
-// Function to fetch news based on selected topics
+// Function to fetch news based on selected topics or search query
 async function fetchNews(topics) {
     const newsFeed = document.getElementById("news-feed");
     newsFeed.innerHTML = "<p>Loading news...</p>"; // Show loading text
 
     try {
         const responses = await Promise.all(
-            topics.map((topic) =>
-                fetch(`${NEWS_API_URL}?topic=${topic}`) // Use proxy server
-            )
+            topics.map((topic) => {
+                const url = `${NEWS_API_URL}?topic=${encodeURIComponent(topic)}`;
+                console.log(`Fetching news from URL: ${url}`); // Debugging log
+                return fetch(url); // Use proxy server
+            })
         );
 
         const dataResponses = await Promise.all(responses.map(async (res) => {
@@ -92,10 +94,12 @@ async function loadSavedTopicsAndFavorites() {
     const topicSelect = document.getElementById("topic-select");
     const saveButton = document.getElementById("save-settings");
     const refreshButton = document.getElementById("refresh-news");
+    const categorySelect = document.getElementById("category-select");
+    const darkModeButton = document.getElementById("toggle-dark-mode");
 
     // Load saved topics on startup
     chrome.storage.sync.get(["topics", "favorites"], function (data) {
-        if (data.topics) {
+        if (data.topics && topicSelect) {
             data.topics.forEach((topic) => {
                 for (let option of topicSelect.options) {
                     if (option.value === topic) {
@@ -106,31 +110,49 @@ async function loadSavedTopicsAndFavorites() {
             // Fetch news for the saved topics
             fetchNews(data.topics);
         }
-
         // Load saved favorite articles
         loadFavorites(data.favorites);
     });
 
     // Save selected topics and refresh the news feed
-    saveButton.addEventListener("click", () => {
-        const selectedTopics = Array.from(topicSelect.selectedOptions).map(
-            (option) => option.value
-        );
-
-        chrome.storage.sync.set({ topics: selectedTopics }, () => {
-            alert("Topics saved!"); // Confirmation message
-            // Fetch news for the newly saved topics
-            fetchNews(selectedTopics);
+    if (saveButton) {
+        saveButton.addEventListener("click", () => {
+            const selectedTopics = Array.from(topicSelect.selectedOptions).map(
+                (option) => option.value
+            );
+            chrome.storage.sync.set({ topics: selectedTopics }, () => {
+                alert("Topics saved!"); // Confirmation message
+                // Fetch news for the newly saved topics
+                fetchNews(selectedTopics);
+            });
         });
-    });
+    }
 
     // Refresh news feed on button click
-    refreshButton.addEventListener("click", () => {
-        const selectedTopics = Array.from(topicSelect.selectedOptions).map(
-            (option) => option.value
-        );
-        fetchNews(selectedTopics); // Fetch news again
-    });
+    if (refreshButton) {
+        refreshButton.addEventListener("click", () => {
+            const selectedTopics = Array.from(topicSelect.selectedOptions).map(
+                (option) => option.value
+            );
+            fetchNews(selectedTopics); // Fetch news again
+        });
+    }
+
+    // Filter news based on category
+    if (categorySelect) {
+        categorySelect.addEventListener("change", () => {
+            const category = categorySelect.value;
+            fetchNews([category]); // Fetch news based on selected category
+        });
+    }
+
+    // Toggle dark mode
+    if (darkModeButton) {
+        darkModeButton.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            darkModeButton.textContent = document.body.classList.contains("dark-mode") ? "Toggle Light Mode" : "Toggle Dark Mode";
+        });
+    }
 }
 
 // Function to load and display favorite articles
