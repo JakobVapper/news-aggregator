@@ -67,7 +67,7 @@ function saveFavorite(url) {
             favorites.push(url); // Add new article URL
             chrome.storage.sync.set({ favorites }, () => {
                 alert("Article saved to favorites!");
-                loadFavorites(); // Refresh favorites display
+                loadFavorites(favorites); // Refresh favorites display with the updated list
             });
         } else {
             alert("This article is already in your favorites."); // Alert if already exists
@@ -82,7 +82,7 @@ function removeFavorite(url) {
         const updatedFavorites = favorites.filter(fav => fav !== url); // Remove the specific article
         chrome.storage.sync.set({ favorites: updatedFavorites }, () => {
             alert("Article removed from favorites!");
-            loadFavorites(); // Refresh favorites display
+            loadFavorites(updatedFavorites); // Refresh favorites display with the updated list
         });
     });
 }
